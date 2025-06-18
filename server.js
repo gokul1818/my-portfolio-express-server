@@ -37,8 +37,7 @@ app.post("/api/fetch-data", async (req, res) => {
     const message = `👋 New visitor!
 Name: ${name}
 IP: ${data.ip}
-Location: ${data.city}, ${data.region}, ${data.country_name}
-ISP: ${data.connection?.isp || "N/A"}
+📍Location: ${data.city}, ${data.regionName}, ${data.countryName}
 🗺️ Map: ${mapLink}`;
 
     // Send to Telegram
