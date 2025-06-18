@@ -15,8 +15,11 @@ app.post("/api/fetch-data", async (req, res) => {
   const bytes = CryptoJS.AES.decrypt(payload, secretKey);
   const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
   const { name, token, chat_Id, ipToken } = decryptedData;
+  console.log('decryptedData: ', decryptedData);
   const resInfo = await fetch(`https://ipinfo.io/json?${ipToken}=demo`); // Replace demo with your real token
+  console.log('resInfo: ', resInfo);
   const data = await resInfo.json();
+  console.log('data: ', data);
 
   const mapLink = `https://www.google.com/maps?q=${data.loc}`;
   const message = `👋 New visitor!\nName:${name}\nLocation: ${data.city}, ${data.region}, ${data.country}\n🗺️ Map: ${mapLink}`;
