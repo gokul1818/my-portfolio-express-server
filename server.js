@@ -11,28 +11,46 @@ app.use(express.json()); // parse JSON bodies
 
 const secretKey = process.env.SECRET_KEY;
 app.post("/api/fetch-data", async (req, res) => {
-  const { payload } = req.body;
-  const bytes = CryptoJS.AES.decrypt(payload, secretKey);
-  const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-  const { name, token, chat_Id, ipToken } = decryptedData;
-  console.log('decryptedData: ', decryptedData);
-  const resInfo = await fetch(`https://ipinfo.io/json?${ipToken}=demo`); // Replace demo with your real token
-  console.log('resInfo: ', resInfo);
-  const data = await resInfo.json();
-  console.log('data: ', data);
-
-  const mapLink = `https://www.google.com/maps?q=${data.loc}`;
-  const message = `👋 New visitor!\nName:${name}\nLocation: ${data.city}, ${data.region}, ${data.country}\n🗺️ Map: ${mapLink}`;
-
   try {
+    const { payload } = req.body;
+
+    // Decrypt the payload
+    const bytes = CryptoJS.AES.decrypt(payload, secretKey);
+    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+
+    const { name, token, chat_Id, apiIPToken } = decryptedData;
+
+    // Get user's IP from headers (cloud/CDN safe)
+    const clientIP =
+      req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+
+    // Call apiip.net for geolocation data
+    const response = await fetch(
+      `https://apiip.net/api/check?ip=${clientIP}&accessKey=${apiIPToken}`
+    );
+    const data = await response.json();
+
+    // Optional: log to verify
+    console.log("APIIP Data:", data);
+
+    const mapLink = `https://www.google.com/maps?q=${data.latitude},${data.longitude}`;
+    const message = `👋 New visitor!
+Name: ${name}
+IP: ${data.ip}
+Location: ${data.city}, ${data.region}, ${data.country_name}
+ISP: ${data.connection?.isp || "N/A"}
+🗺️ Map: ${mapLink}`;
+
+    // Send to Telegram
     await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
       chat_id: chat_Id,
       text: message,
     });
+
     res.send({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ error: "Failed to send message" });
+  } catch (error) {
+    console.error("Error in fetch-data:", error.message);
+    res.status(500).json({ error: "Failed to fetch or send visitor data" });
   }
 });
 
