@@ -89,6 +89,7 @@ app.post("/api/send-mail", async (req, res) => {
 // 📡 Water Level Receiver (from ESP8266)
 app.post("/api/level", (req, res) => {
   const { level } = req.body;
+  console.log('level: ', level);
 
   if (typeof level === "number") {
     currentLevel = level;
